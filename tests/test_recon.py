@@ -90,6 +90,53 @@ def test_fuzzy_match(session):
     assert result.exceptions == []
 
 
+def test_fuzzy_match_survives_cryptic_descriptor(session):
+    # Whole-string difflib similarity here is about 0.35; the shared vendor
+    # token plus equal amount and in-window date must still produce a match.
+    line = bank(session, -1550.00, 12, "WEWORK COMMONS BTRQJ")
+    entry = gl_cash(session, -1550.00, 12, "Payment to WeWork INV-WW-2601754")
+
+    result = run_recon(session, PERIOD)
+
+    assert len(result.matches) == 1
+    match = result.matches[0]
+    assert match["match_type"] == "fuzzy"
+    assert match["bank_line_ids"] == [line.id]
+    assert match["gl_entry_ids"] == [entry.id]
+    assert result.exceptions == []
+    assert result.stats["auto_match_rate"] == 1.0
+
+
+def test_fuzzy_weak_match_confidence_stays_below_auto_approve(session):
+    # Best token pair is AMZN vs AMAZON (0.8), the measured floor for true
+    # pairs; the confidence must land below the 0.85 auto-approve band.
+    line = bank(session, -1287.53, 15, "AMZN WEB SERV F5CBF")
+    entry = gl_cash(session, -1287.53, 16, "Payment to Amazon Web Services INV-AWS-2601792")
+
+    result = run_recon(session, PERIOD)
+
+    assert len(result.matches) == 1
+    match = result.matches[0]
+    assert match["match_type"] == "fuzzy"
+    assert match["bank_line_ids"] == [line.id]
+    assert match["gl_entry_ids"] == [entry.id]
+    assert 0.5 <= match["confidence"] < 0.85
+
+
+def test_unrelated_equal_amount_in_window_does_not_match(session):
+    line = bank(session, -1200.00, 10, "MYSTERY WIRE OUT")
+    entry = gl_cash(session, -1200.00, 11, "Unknown disbursement")
+
+    result = run_recon(session, PERIOD)
+
+    assert result.matches == []
+    assert result.proposed_jes == []
+    by_table = {exc["source_table"]: exc for exc in result.exceptions}
+    assert by_table["bank_lines"]["row_id"] == line.id
+    assert by_table["gl_entries"]["row_id"] == entry.id
+    assert all(exc["category"] == "recon_unmatched" for exc in result.exceptions)
+
+
 def test_one_to_many_match(session):
     line = bank(session, -900.00, 20, "ACH BATCH RELIANT OFFICE")
     parts = [
@@ -196,6 +243,42 @@ def test_dodo_payout_je_and_unmatched_payout_exception(session):
     assert exc["row_id"] == orphan.id
     assert exc["period"] == PERIOD
     assert result.stats["unmatched_bank"] == 0
+
+
+def test_all_dodo_payouts_reconcile_when_gl_already_books_them(session):
+    # Mirrors the generator: the GL books each payout (cash at net) and the
+    # bank shows the net deposit. The fuzzy pass ties deposit to GL entry and
+    # the payout pass must treat every payout as reconciled: no duplicate JE,
+    # no exception.
+    grosses = [31240.55, 42780.10, 28466.87, 36901.32]
+    deposits = []
+    for n, gross in enumerate(grosses, start=1):
+        fee = round(gross * 0.032, 2)
+        net = round(gross - fee, 2)
+        day = 7 * n
+        session.add(
+            DodoPayout(
+                period=PERIOD,
+                payout_date=f"{PERIOD}-{day:02d}",
+                gross_amount=gross,
+                fee_amount=fee,
+                net_amount=net,
+                reference=f"DP-{PERIOD}-{n}",
+            )
+        )
+        gl_cash(session, net, day, f"Dodo Payments payout DP-{PERIOD}-{n}")
+        deposit_day = day + 1 if n == 2 else day
+        deposits.append(bank(session, net, deposit_day, f"DODO PAYMENTS {n}X{n}Q{n}"))
+    session.commit()
+
+    result = run_recon(session, PERIOD)
+
+    fuzzy = [m for m in result.matches if m["match_type"] == "fuzzy"]
+    assert sorted(m["bank_line_ids"][0] for m in fuzzy) == sorted(d.id for d in deposits)
+    assert result.proposed_jes == []
+    assert result.exceptions == []
+    assert result.stats["unmatched_bank"] == 0
+    assert result.stats["unmatched_gl"] == 0
 
 
 def test_unmatched_bank_and_gl_become_exceptions(session):

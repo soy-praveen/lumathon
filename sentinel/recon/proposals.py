@@ -16,9 +16,9 @@ from sentinel.db import BankLine, GLEntry
 from sentinel.recon.matching import (
     FUZZY_SIMILARITY,
     amounts_equal,
+    descriptor_score,
     gl_signed_amount,
     normalize,
-    similarity,
 )
 from sentinel.schemas import Evidence, JELine, ProposedJE
 
@@ -114,7 +114,7 @@ def _timing_je(
             continue
         if not amounts_equal(line.amount, gl_signed_amount(entry)):
             continue
-        if similarity(line.descriptor, entry.description) < FUZZY_SIMILARITY:
+        if descriptor_score(line.descriptor, entry.description) < FUZZY_SIMILARITY:
             continue
         counterpart = entry
         break

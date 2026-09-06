@@ -98,7 +98,7 @@ The eval harness generates the synthetic company, closes all three months headle
 | Overall F1 | 0.9851 |
 | Detections | 33 true positives, 1 false positive, 0 misses |
 | Auto-match rate (bank recon) | 1.0 in all three months |
-| Escalation rate by month | 0.75 (2026-01), 0.6923 (2026-02), 0.6364 (2026-03) |
+| Escalation rate by month | 0.7273 (2026-01), 0.6667 (2026-02), 0.6 (2026-03) |
 | Rules promoted | 1 per month, 0 rejected by the regression gate |
 | Wall time per close | under half a second |
 

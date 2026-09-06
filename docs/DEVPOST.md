@@ -36,7 +36,7 @@ From the committed `eval/results.json` (LLM disabled, fully deterministic run):
 
 - **Precision 0.9706, recall 1.0, F1 0.9851** overall: 33 true positives, 1 false positive, 0 misses. The single false positive is one duplicate-invoice flag in 2026-02; recall is 1.0 in every category.
 - **Bank auto-match rate 1.0** in all three months.
-- **Escalation rate falls month over month: 0.75 to 0.6923 to 0.6364**, because each month's reviewed decisions become promoted rules (1 per month, 0 rejected by the gate) that handle the same situations automatically.
+- **Escalation rate falls month over month: 0.7273 to 0.6667 to 0.6**, because each month's reviewed decisions become promoted rules (1 per month, 0 rejected by the gate) that handle the same situations automatically.
 - Each close completes in under half a second of wall time.
 
 Charts are committed as `eval/escalation.png` and `eval/f1_by_category.png`, and the whole eval reproduces with `uv run python -m eval.run --db data/eval.db --seed 42 --out eval/results.json`.

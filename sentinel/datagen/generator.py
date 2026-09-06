@@ -11,7 +11,8 @@ Ground truth conventions (the contract with the engines and the eval harness):
 - vendor_name_variance points at the ap_invoices row booked to the variant
   vendor name.
 - round_number_split lists each split ap_invoices row separately.
-- out_of_period lists each misdated gl_entries row separately.
+- out_of_period points at the lowest-id gl_entries leg of each misdated
+  posting; a double-entry posting is one anomaly, not one per leg.
 - missing_recurring points at the recurring_vendors calendar row whose bill
   is absent this period.
 - rni_po points at the purchase_orders row received but not invoiced.
@@ -541,15 +542,14 @@ class _Generator:
         amount = round(self.rng.uniform(700.0, 2400.0), 2)
         text = "Contractor services accrual"
         debit_row = self._gl(period, wrong, "6600", text, debit=amount, source="manual")
-        credit_row = self._gl(period, wrong, company.ACCRUED, text, credit=amount, source="manual")
-        for row in (debit_row, credit_row):
-            self._plant(
-                period,
-                "out_of_period",
-                "gl_entries",
-                row.id,
-                f"GL entry dated {wrong.isoformat()} posted to period {period}",
-            )
+        self._gl(period, wrong, company.ACCRUED, text, credit=amount, source="manual")
+        self._plant(
+            period,
+            "out_of_period",
+            "gl_entries",
+            debit_row.id,
+            f"GL entry dated {wrong.isoformat()} posted to period {period}",
+        )
 
 
 def generate(

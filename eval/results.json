@@ -10,7 +10,7 @@
     ],
     "llm_mode": "auto",
     "llm_enabled": false,
-    "generated_at": "2026-09-06T11:55:44+00:00"
+    "generated_at": "2026-09-06T12:01:09+00:00"
   },
   "months": [
     {
@@ -21,7 +21,7 @@
       "exception_count": 7,
       "escalation_rate": 0.7273,
       "auto_match_rate": 1.0,
-      "wall_time_seconds": 0.352,
+      "wall_time_seconds": 0.188,
       "llm_calls": {
         "attempted": 8,
         "succeeded": 0
@@ -74,10 +74,10 @@
           "out_of_period": {
             "tp": 1,
             "fp": 0,
-            "fn": 1,
+            "fn": 0,
             "precision": 1.0,
-            "recall": 0.5,
-            "f1": 0.6667
+            "recall": 1.0,
+            "f1": 1.0
           },
           "rni_po": {
             "tp": 1,
@@ -115,10 +115,10 @@
         "totals": {
           "tp": 10,
           "fp": 0,
-          "fn": 1,
+          "fn": 0,
           "precision": 1.0,
-          "recall": 0.9091,
-          "f1": 0.9524
+          "recall": 1.0,
+          "f1": 1.0
         }
       }
     },
@@ -130,7 +130,7 @@
       "exception_count": 7,
       "escalation_rate": 0.6667,
       "auto_match_rate": 1.0,
-      "wall_time_seconds": 0.318,
+      "wall_time_seconds": 0.193,
       "llm_calls": {
         "attempted": 7,
         "succeeded": 0
@@ -183,10 +183,10 @@
           "out_of_period": {
             "tp": 1,
             "fp": 0,
-            "fn": 1,
+            "fn": 0,
             "precision": 1.0,
-            "recall": 0.5,
-            "f1": 0.6667
+            "recall": 1.0,
+            "f1": 1.0
           },
           "rni_po": {
             "tp": 1,
@@ -224,10 +224,10 @@
         "totals": {
           "tp": 10,
           "fp": 1,
-          "fn": 1,
+          "fn": 0,
           "precision": 0.9091,
-          "recall": 0.9091,
-          "f1": 0.9091
+          "recall": 1.0,
+          "f1": 0.9524
         }
       }
     },
@@ -239,7 +239,7 @@
       "exception_count": 5,
       "escalation_rate": 0.6,
       "auto_match_rate": 1.0,
-      "wall_time_seconds": 0.285,
+      "wall_time_seconds": 0.198,
       "llm_calls": {
         "attempted": 6,
         "succeeded": 0
@@ -292,10 +292,10 @@
           "out_of_period": {
             "tp": 1,
             "fp": 0,
-            "fn": 1,
+            "fn": 0,
             "precision": 1.0,
-            "recall": 0.5,
-            "f1": 0.6667
+            "recall": 1.0,
+            "f1": 1.0
           },
           "rni_po": {
             "tp": 1,
@@ -333,10 +333,10 @@
         "totals": {
           "tp": 10,
           "fp": 0,
-          "fn": 1,
+          "fn": 0,
           "precision": 1.0,
-          "recall": 0.9091,
-          "f1": 0.9524
+          "recall": 1.0,
+          "f1": 1.0
         }
       }
     }
@@ -377,10 +377,10 @@
     "out_of_period": {
       "tp": 3,
       "fp": 0,
-      "fn": 3,
+      "fn": 0,
       "precision": 1.0,
-      "recall": 0.5,
-      "f1": 0.6667
+      "recall": 1.0,
+      "f1": 1.0
     },
     "rni_po": {
       "tp": 3,
@@ -418,10 +418,10 @@
   "totals": {
     "tp": 30,
     "fp": 1,
-    "fn": 3,
+    "fn": 0,
     "precision": 0.9677,
-    "recall": 0.9091,
-    "f1": 0.9375
+    "recall": 1.0,
+    "f1": 0.9836
   },
   "escalation_by_month": {
     "2026-01": 0.7273,

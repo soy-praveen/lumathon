@@ -162,6 +162,14 @@ def run_close(
             if flux_res is not None:
                 stats["flux_movements"] = len(flux_res.movements)
 
+            tracing.log(
+                "close {period}: {je_count} JEs, {needs_review} to review, {exceptions} exceptions",
+                period=period,
+                je_count=len(triaged),
+                needs_review=needs_review,
+                exceptions=len(exception_dicts),
+                rules_applied=len(rules),
+            )
             result = CloseResult(
                 period=period,
                 je_count=len(triaged),

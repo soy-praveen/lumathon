@@ -26,6 +26,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from sentinel import tracing
 from sentinel.db import APInvoice, GLEntry, Vendor
 
 DUP_DATE_WINDOW_DAYS = 10
@@ -48,6 +49,7 @@ class AnomalyResult(BaseModel):
     exceptions: list[dict]
 
 
+@tracing.span("TOOL", name="anomaly", tool_name="anomaly_checks")
 def run_anomaly(session: Session, period: str) -> AnomalyResult:
     """Run all anomaly checks for the period."""
     exceptions: list[dict] = []

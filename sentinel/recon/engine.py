@@ -13,6 +13,7 @@ import re
 
 from sqlalchemy.orm import Session
 
+from sentinel import tracing
 from sentinel.db import BankLine, GLEntry
 from sentinel.recon.accounts import cash_account_codes, resolve_accounts
 from sentinel.recon.dodo import reconcile_payouts
@@ -25,6 +26,7 @@ from sentinel.schemas import PolicyRule
 PERIOD_PATTERN = re.compile(r"^\d{4}-\d{2}$")
 
 
+@tracing.span("TOOL", name="recon", tool_name="bank_reconciliation")
 def run_recon(
     session: Session, period: str, rules: list[PolicyRule] | None = None
 ) -> ReconResult:

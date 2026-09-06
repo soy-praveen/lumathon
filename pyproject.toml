@@ -10,6 +10,7 @@ dependencies = [
     "pydantic>=2.0",
     "anthropic>=0.40",
     "python-dotenv>=1.0",
+    "neatlogs>=1.4.21",
 ]
 
 [dependency-groups]

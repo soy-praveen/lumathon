@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from sentinel import tracing
 from sentinel.db import APInvoice, GLEntry, RecurringVendor, Vendor
 
 COVERAGE_SHARE = 0.8  # drivers must cover this share of the delta to count as explained
@@ -29,6 +30,7 @@ class FluxResult(BaseModel):
     exceptions: list[dict]
 
 
+@tracing.span("TOOL", name="flux", tool_name="flux_analysis")
 def run_flux(
     session: Session,
     period: str,

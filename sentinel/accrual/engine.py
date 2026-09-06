@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from sentinel import tracing
 from sentinel.db import (
     APInvoice,
     GLEntry,
@@ -44,6 +45,7 @@ class AccrualResult(BaseModel):
     exceptions: list[dict]
 
 
+@tracing.span("TOOL", name="accruals", tool_name="accrual_detection")
 def run_accruals(
     session: Session, period: str, rules: list[PolicyRule] | None = None
 ) -> AccrualResult:

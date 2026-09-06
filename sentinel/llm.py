@@ -13,6 +13,8 @@ import subprocess
 
 from pydantic import BaseModel, ValidationError
 
+from sentinel import tracing
+
 DEFAULT_MODEL = "claude-sonnet-5"
 CLI_TIMEOUT_SECONDS = 300
 
@@ -21,6 +23,7 @@ class LLMError(Exception):
     """Raised when the model call fails or returns unusable output."""
 
 
+@tracing.span("CHAIN", name="llm.complete")
 def complete(prompt: str, system: str | None = None, model: str | None = None) -> str:
     """Return the model's text completion for the prompt."""
     model = model or DEFAULT_MODEL
@@ -29,6 +32,7 @@ def complete(prompt: str, system: str | None = None, model: str | None = None) -
     return _complete_cli(prompt, system, model)
 
 
+@tracing.span("CHAIN", name="llm.complete_json")
 def complete_json(
     prompt: str,
     schema: type[BaseModel],

@@ -20,9 +20,9 @@ def add_vendor(session, name):
     return vendor
 
 
-def add_invoice(session, vendor, number, invoice_date, amount):
+def add_invoice(session, vendor, number, invoice_date, amount, period=PERIOD):
     invoice = APInvoice(
-        period=PERIOD,
+        period=period,
         vendor_id=vendor.id,
         invoice_number=number,
         invoice_date=invoice_date,
@@ -76,6 +76,56 @@ def test_vendor_name_variance_fires_on_near_duplicate_names():
     assert exc["source_table"] == "vendors"
     assert exc["row_id"] == second.id
     assert str(first.id) in exc["description"]
+
+
+def test_vendor_name_variance_catches_corporate_suffix_variants():
+    session = make_session()
+    datadog = add_vendor(session, "Datadog")
+    datadog_variant = add_vendor(session, "Datadog, Inc.")
+    twilio = add_vendor(session, "Twilio")
+    twilio_variant = add_vendor(session, "Twilio Inc.")
+    add_invoice(session, datadog, "DD-4471", "2026-01-05", 2350.00)
+    add_invoice(session, datadog_variant, "DD-4488", "2026-01-14", 2361.75)
+    add_invoice(session, twilio, "TW-9052", "2026-01-07", 512.40)
+    add_invoice(session, twilio_variant, "TW-9101", "2026-01-16", 498.15)
+
+    result = run_anomaly(session, PERIOD)
+    variances = by_category(result, "vendor_name_variance")
+    pairs = {
+        (exc["row_id"], partner)
+        for exc in variances
+        for partner in [int(exc["description"].split("vendors row ")[1].split(")")[0])]
+    }
+    assert pairs == {
+        (datadog_variant.id, datadog.id),
+        (twilio_variant.id, twilio.id),
+    }
+
+
+def test_vendor_name_variance_silent_on_distinct_vendors():
+    session = make_session()
+    gusto = add_vendor(session, "Gusto")
+    datadog = add_vendor(session, "Datadog")
+    add_invoice(session, gusto, "GUS-1201", "2026-01-15", 62410.22)
+    add_invoice(session, datadog, "DD-4471", "2026-01-05", 2350.00)
+
+    result = run_anomaly(session, PERIOD)
+    assert by_category(result, "vendor_name_variance") == []
+
+
+def test_vendor_name_variance_not_rereported_in_later_periods():
+    session = make_session()
+    datadog = add_vendor(session, "Datadog")
+    variant = add_vendor(session, "Datadog, Inc.")
+    add_invoice(session, datadog, "DD-4471", "2026-01-05", 2350.00)
+    add_invoice(session, variant, "DD-4488", "2026-01-14", 2361.75)
+    add_invoice(session, datadog, "DD-4532", "2026-02-05", 2344.10, period="2026-02")
+
+    january = run_anomaly(session, PERIOD)
+    assert len(by_category(january, "vendor_name_variance")) == 1
+
+    february = run_anomaly(session, "2026-02")
+    assert by_category(february, "vendor_name_variance") == []
 
 
 def test_round_number_split_fires_on_invoices_just_under_limit():

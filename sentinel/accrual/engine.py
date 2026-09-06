@@ -82,7 +82,7 @@ def _detect_rni_pos(
             continue
         po_receipts = by_po[po_id]
         received = round(sum(r.amount for r in po_receipts), 2)
-        if _has_matching_invoice(session, po, received):
+        if _has_matching_invoice(session, period, po, received):
             continue
 
         vendor = session.get(Vendor, po.vendor_id)
@@ -139,9 +139,17 @@ def _detect_rni_pos(
             )
 
 
-def _has_matching_invoice(session: Session, po: PurchaseOrder, received: float) -> bool:
+def _has_matching_invoice(
+    session: Session, period: str, po: PurchaseOrder, received: float
+) -> bool:
+    # Only invoices dated in the current period or earlier can suppress the
+    # accrual; one that arrives next period is exactly what the accrual covers.
     invoices = session.scalars(
-        select(APInvoice).where(APInvoice.vendor_id == po.vendor_id, APInvoice.status != "void")
+        select(APInvoice).where(
+            APInvoice.vendor_id == po.vendor_id,
+            APInvoice.status != "void",
+            APInvoice.period <= period,
+        )
     ).all()
     return any(
         abs(inv.amount - received) <= AMOUNT_TOLERANCE

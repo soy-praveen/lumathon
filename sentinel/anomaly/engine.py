@@ -8,9 +8,11 @@ with partner row ids named in the description:
 - vendor_name_variance: near-duplicate vendor names via difflib, after
   normalizing case and stripping corporate suffixes (Inc, LLC, Ltd, Co).
   A pair is reported once, in the period the newer vendor first bills.
+  A promoted policy rule can suppress a known-benign pair.
 - round_number_split: two or more invoices from one vendor just under a round
   approval limit, or a single suspiciously round invoice amount.
-- out_of_period: gl_entries whose entry_date falls outside their period column.
+- out_of_period: gl_entries whose entry_date falls outside their period column,
+  one exception per logical journal entry (double-entry rows deduped).
 
 No LLM calls here.
 """
@@ -28,6 +30,7 @@ from sqlalchemy.orm import Session
 
 from sentinel import tracing
 from sentinel.db import APInvoice, GLEntry, Vendor
+from sentinel.schemas import PolicyRule
 
 DUP_DATE_WINDOW_DAYS = 10
 DUP_AMOUNT_PCT = 0.01  # amounts within 1 percent (or one cent) count as near-same
@@ -50,12 +53,14 @@ class AnomalyResult(BaseModel):
 
 
 @tracing.span("TOOL", name="anomaly", tool_name="anomaly_checks")
-def run_anomaly(session: Session, period: str) -> AnomalyResult:
-    """Run all anomaly checks for the period."""
+def run_anomaly(
+    session: Session, period: str, rules: list[PolicyRule] | None = None
+) -> AnomalyResult:
+    """Run all anomaly checks for the period, applying promoted policy rules."""
     exceptions: list[dict] = []
     invoices_by_vendor = _invoices_by_vendor(session, period)
     _check_duplicate_invoices(invoices_by_vendor, period, exceptions)
-    _check_vendor_name_variance(session, period, exceptions)
+    _check_vendor_name_variance(session, period, exceptions, rules or [])
     _check_round_number_split(invoices_by_vendor, period, exceptions)
     _check_out_of_period(session, period, exceptions)
     return AnomalyResult(exceptions=exceptions)
@@ -106,9 +111,25 @@ def _check_duplicate_invoices(
             )
 
 
-def _check_vendor_name_variance(session: Session, period: str, exceptions: list[dict]) -> None:
+def _check_vendor_name_variance(
+    session: Session, period: str, exceptions: list[dict], rules: list[PolicyRule]
+) -> None:
+    """Flag near-duplicate vendor names, unless a promoted rule covers the pair.
+
+    A rule suppresses a pair when it is active, unexpired for `period`, its
+    scope names this check (contains ``vendor_name_variance`` or ``anomaly``,
+    case-insensitive), its action starts with ``suppress`` or ``ignore``, and
+    its condition covers the pair: after the same normalization the vendor
+    names get (lowercase, punctuation stripped, trailing corporate suffixes
+    dropped), both vendors' normalized names appear in the normalized
+    condition. Suffix variants share one normalized name, so a condition
+    naming the shared name (for example ``vendor:Datadog``) covers the pair;
+    otherwise the condition must name both vendors. Pairs no rule covers
+    still fire.
+    """
     vendors = session.scalars(select(Vendor).order_by(Vendor.id)).all()
     first_billed = _first_invoice_periods(session, period)
+    active = [rule for rule in rules if _rule_applies_to_variance(rule, period)]
     for first, second in combinations(vendors, 2):
         ratio = SequenceMatcher(None, _normalize_name(first.name), _normalize_name(second.name))
         similarity = ratio.ratio()
@@ -119,6 +140,8 @@ def _check_vendor_name_variance(session: Session, period: str, exceptions: list[
         # with no invoices yet counts as new this period.
         emergence = max(first_billed.get(first.id, period), first_billed.get(second.id, period))
         if emergence != period:
+            continue
+        if any(_rule_covers_pair(rule, first.name, second.name) for rule in active):
             continue
         exceptions.append(
             {
@@ -141,6 +164,25 @@ def _normalize_name(name: str) -> str:
     while len(tokens) > 1 and tokens[-1] in CORPORATE_SUFFIXES:
         tokens.pop()
     return " ".join(tokens)
+
+
+def _rule_applies_to_variance(rule: PolicyRule, period: str) -> bool:
+    if not rule.active:
+        return False
+    if rule.expires is not None and rule.expires < period:
+        return False
+    scope = rule.scope.lower()
+    if "vendor_name_variance" not in scope and "anomaly" not in scope:
+        return False
+    action = rule.action.strip().lower()
+    return action.startswith("suppress") or action.startswith("ignore")
+
+
+def _rule_covers_pair(rule: PolicyRule, first_name: str, second_name: str) -> bool:
+    condition = _normalize_name(rule.condition)
+    return all(
+        _normalize_name(name) in condition for name in (first_name, second_name)
+    )
 
 
 def _first_invoice_periods(session: Session, period: str) -> dict[int, str]:
@@ -198,12 +240,24 @@ def _check_round_number_split(
 
 
 def _check_out_of_period(session: Session, period: str, exceptions: list[dict]) -> None:
+    """Flag entries dated outside their period, once per logical journal entry.
+
+    A double-entry posting lands as one gl_entries row per leg sharing date,
+    description, and source; flagging each leg would double-report the entry.
+    Rows are visited in id order and deduped on that shared key, so the
+    exception points at the lowest-id row of the posting.
+    """
     entries = session.scalars(
         select(GLEntry).where(GLEntry.period == period).order_by(GLEntry.id)
     ).all()
+    seen: set[tuple[str, str, str | None]] = set()
     for entry in entries:
         if entry.entry_date[:7] == entry.period:
             continue
+        key = (entry.entry_date, entry.description, entry.source)
+        if key in seen:
+            continue
+        seen.add(key)
         exceptions.append(
             {
                 "category": "out_of_period",

@@ -102,7 +102,7 @@ def run_close(
             flux_res = None
             if prior_period is not None:
                 flux_res = resolve_engine("flux", engines)(session, period, prior_period)
-            anomaly_res = resolve_engine("anomaly", engines)(session, period)
+            anomaly_res = resolve_engine("anomaly", engines)(session, period, rules=rules)
 
             proposed = list(recon_res.proposed_jes) + list(accrual_res.proposed_jes)
             triaged = ambiguity.triage_jes(proposed)

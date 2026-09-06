@@ -10,7 +10,7 @@
     ],
     "llm_mode": "auto",
     "llm_enabled": false,
-    "generated_at": "2026-09-06T12:01:09+00:00"
+    "generated_at": "2026-09-06T12:02:44+00:00"
   },
   "months": [
     {
@@ -21,7 +21,7 @@
       "exception_count": 7,
       "escalation_rate": 0.7273,
       "auto_match_rate": 1.0,
-      "wall_time_seconds": 0.188,
+      "wall_time_seconds": 0.273,
       "llm_calls": {
         "attempted": 8,
         "succeeded": 0
@@ -130,7 +130,7 @@
       "exception_count": 7,
       "escalation_rate": 0.6667,
       "auto_match_rate": 1.0,
-      "wall_time_seconds": 0.193,
+      "wall_time_seconds": 0.265,
       "llm_calls": {
         "attempted": 7,
         "succeeded": 0
@@ -239,7 +239,7 @@
       "exception_count": 5,
       "escalation_rate": 0.6,
       "auto_match_rate": 1.0,
-      "wall_time_seconds": 0.198,
+      "wall_time_seconds": 0.254,
       "llm_calls": {
         "attempted": 6,
         "succeeded": 0

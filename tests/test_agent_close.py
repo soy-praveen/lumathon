@@ -40,7 +40,7 @@ def make_je(confidence, status, row_id=1, amount=125.37):
 
 
 def make_fake_engines(recon_jes=(), recon_exceptions=(), accrual_jes=(), flux_exceptions=(),
-                      anomaly_exceptions=(), seen_rules=None):
+                      anomaly_exceptions=(), seen_rules=None, anomaly_seen_rules=None):
     def recon(session, period, rules=None):
         if seen_rules is not None:
             seen_rules.extend(rules or [])
@@ -57,7 +57,9 @@ def make_fake_engines(recon_jes=(), recon_exceptions=(), accrual_jes=(), flux_ex
     def flux(session, period, prior_period, threshold_pct=10.0, threshold_abs=5000.0):
         return SimpleNamespace(movements=[{"account": "6000"}], exceptions=list(flux_exceptions))
 
-    def anomaly(session, period):
+    def anomaly(session, period, rules=None):
+        if anomaly_seen_rules is not None:
+            anomaly_seen_rules.extend(rules or [])
         return SimpleNamespace(exceptions=list(anomaly_exceptions))
 
     return {"recon": recon, "accrual": accrual, "flux": flux, "anomaly": anomaly}
@@ -173,6 +175,24 @@ def test_run_close_passes_active_unexpired_rules(tmp_path):
     engines = make_fake_engines(seen_rules=seen_rules)
     run_close(engine, "2026-02", engines=engines)
     assert [rule.scope for rule in seen_rules] == ["vendor:AWS"]
+
+
+def test_run_close_passes_rules_to_anomaly(tmp_path):
+    engine = make_engine(tmp_path)
+    with get_session(engine) as session:
+        session.add(
+            PolicyRuleRow(
+                scope="anomaly:vendor_name_variance",
+                condition="vendor:Datadog",
+                action="suppress",
+            )
+        )
+
+    anomaly_seen_rules = []
+    engines = make_fake_engines(anomaly_seen_rules=anomaly_seen_rules)
+    run_close(engine, "2026-02", engines=engines)
+    assert [rule.scope for rule in anomaly_seen_rules] == ["anomaly:vendor_name_variance"]
+    assert anomaly_seen_rules[0].condition == "vendor:Datadog"
 
 
 def test_load_active_rules_keeps_rule_expiring_in_period(tmp_path):

@@ -1,10 +1,12 @@
 """Dodo Payments payout reconciliation.
 
-Each payout's net amount is matched to an unmatched bank deposit within a
-small date window. A matched payout yields a JE booking cash at net, the
-processing fee to fee expense, and revenue at gross. Payouts whose split does
-not tie (gross - fee != net) or that have no matching deposit become
-exceptions.
+Each payout's net amount is matched to a bank deposit within a small date
+window. A deposit that the matching passes already tied to a GL cash entry
+means the ledger has the payout booked, so the payout is reconciled with
+nothing further to propose. A deposit still unmatched yields a JE booking
+cash at net, the processing fee to fee expense, and revenue at gross.
+Payouts whose split does not tie (gross - fee != net) or that have no
+matching deposit anywhere become exceptions.
 """
 
 from __future__ import annotations
@@ -26,8 +28,15 @@ def reconcile_payouts(
     period: str,
     bank_lines: list[BankLine],
     accounts: dict[str, str],
+    ledgered_deposits: list[BankLine] | None = None,
 ) -> tuple[list[ProposedJE], list[dict], list[BankLine]]:
-    """Match payout net amounts to bank deposits; returns (jes, exceptions, remaining)."""
+    """Match payout net amounts to bank deposits; returns (jes, exceptions, remaining).
+
+    `bank_lines` are the deposits still unmatched after the earlier passes;
+    `ledgered_deposits` are bank lines those passes already tied to GL cash
+    entries. A payout whose deposit sits in the ledgered list is reconciled
+    through the ledger: proposing the payout JE again would double-book it.
+    """
     payouts = (
         session.query(DodoPayout)
         .filter(DodoPayout.period == period)
@@ -37,6 +46,7 @@ def reconcile_payouts(
     jes: list[ProposedJE] = []
     exceptions: list[dict] = []
     remaining = list(bank_lines)
+    ledgered = list(ledgered_deposits or [])
 
     for payout in payouts:
         if abs((payout.gross_amount - payout.fee_amount) - payout.net_amount) > AMOUNT_TOLERANCE:
@@ -51,18 +61,22 @@ def reconcile_payouts(
             )
             continue
         deposit = _find_deposit(payout, remaining)
-        if deposit is None:
-            exceptions.append(
-                _exception(
-                    payout,
-                    period,
-                    f"No bank deposit matches Dodo payout {payout.reference or payout.id} "
-                    f"net {payout.net_amount:.2f} on {payout.payout_date}",
-                )
-            )
+        if deposit is not None:
+            remaining.remove(deposit)
+            jes.append(_payout_je(payout, deposit, accounts))
             continue
-        remaining.remove(deposit)
-        jes.append(_payout_je(payout, deposit, accounts))
+        ledgered_hit = _find_deposit(payout, ledgered)
+        if ledgered_hit is not None:
+            ledgered.remove(ledgered_hit)
+            continue
+        exceptions.append(
+            _exception(
+                payout,
+                period,
+                f"No bank deposit matches Dodo payout {payout.reference or payout.id} "
+                f"net {payout.net_amount:.2f} on {payout.payout_date}",
+            )
+        )
     return jes, exceptions, remaining
 
 

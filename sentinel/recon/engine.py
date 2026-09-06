@@ -58,8 +58,13 @@ def run_recon(
         matches.extend(rule_matches)
         proposed_jes.extend(rule_jes)
 
+    remaining_ids = {line.id for line in remaining_bank}
     dodo_jes, dodo_exceptions, remaining_bank = reconcile_payouts(
-        session, period, remaining_bank, accounts
+        session,
+        period,
+        remaining_bank,
+        accounts,
+        ledgered_deposits=[line for line in bank_lines if line.id not in remaining_ids],
     )
     proposed_jes.extend(dodo_jes)
     exceptions.extend(dodo_exceptions)

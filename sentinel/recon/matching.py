@@ -17,13 +17,31 @@ from sentinel.db import BankLine, GLEntry
 
 AMOUNT_TOLERANCE = 0.01  # one cent
 EXACT_SIMILARITY = 0.8
-FUZZY_SIMILARITY = 0.5
+# The fuzzy pass gates on amount within tolerance and date within the window;
+# descriptor_score only ranks candidates and rejects genuinely unrelated text.
+# Measured on the seed-42 synthetic months: every true bank/GL pair scores at
+# least 0.80 on descriptor_score while the highest-scoring unrelated pair
+# reaches 0.667, so 0.72 splits the two populations with margin on both sides.
+FUZZY_SIMILARITY = 0.72
 FUZZY_DATE_WINDOW_DAYS = 3
 COMBO_MAX_SIZE = 4
 COMBO_POOL_CAP = 12
 
 EXACT_CONFIDENCE = 1.0
 ONE_TO_MANY_CONFIDENCE = 0.8
+
+# Banking-rail and legal-suffix tokens carry no counterparty identity, so they
+# are excluded from token-level scoring ("MONTHLY SERVICE FEE" must not pair
+# with "Amazon Web Services" on SERVICE vs SERVICES).
+STOP_TOKENS = frozenset(
+    {
+        "PAYMENT", "PAYMENTS", "PMT", "PAYROLL", "PAYOUT", "TRANSFER",
+        "DEPOSIT", "WITHDRAWAL", "WIRE", "CHECK", "DEBIT", "CREDIT",
+        "FEE", "FEES", "CHARGE", "SERVICE", "SERVICES", "MONTHLY",
+        "INV", "INVOICE", "BILL", "BATCH", "INC", "LLC", "LLP", "CORP",
+        "COMPANY", "THE", "COM", "AND", "FOR",
+    }
+)
 
 
 def normalize(text: str) -> str:
@@ -40,6 +58,35 @@ def similarity(a: str, b: str) -> float:
     if na in nb or nb in na:
         ratio = max(ratio, 0.9)
     return ratio
+
+
+def _distinctive_tokens(text: str) -> list[str]:
+    """Tokens that can identify a counterparty: 3+ letters, no digits, not rail noise."""
+    return [
+        token
+        for token in normalize(text).split()
+        if len(token) >= 3
+        and token not in STOP_TOKENS
+        and not any(ch.isdigit() for ch in token)
+    ]
+
+
+def descriptor_score(bank_text: str, gl_text: str) -> float:
+    """Best of whole-string similarity and distinctive-token similarity.
+
+    A bank descriptor and its GL description usually share a vendor token even
+    when the whole strings diverge ("WEWORK COMMONS BTRQJ" vs "Payment to
+    WeWork INV-WW-2601754"), so the best token pair competes with the
+    whole-string ratio. Token pairs where both sides are shorter than four
+    characters are too weak to identify a vendor and are skipped.
+    """
+    best = similarity(bank_text, gl_text)
+    for bank_token in _distinctive_tokens(bank_text):
+        for gl_token in _distinctive_tokens(gl_text):
+            if len(bank_token) < 4 and len(gl_token) < 4:
+                continue
+            best = max(best, SequenceMatcher(None, bank_token, gl_token).ratio())
+    return best
 
 
 def gl_signed_amount(entry: GLEntry) -> float:
@@ -89,12 +136,14 @@ def _pair_pass(
             if not amounts_equal(line.amount, gl_signed_amount(entry)):
                 continue
             days = _days_apart(line.line_date, entry.entry_date)
-            sim = similarity(line.descriptor, entry.description)
             if match_type == "exact":
+                sim = similarity(line.descriptor, entry.description)
                 if days != 0 or sim < EXACT_SIMILARITY:
                     continue
-            elif days > FUZZY_DATE_WINDOW_DAYS or sim < FUZZY_SIMILARITY:
-                continue
+            else:
+                sim = descriptor_score(line.descriptor, entry.description)
+                if days > FUZZY_DATE_WINDOW_DAYS or sim < FUZZY_SIMILARITY:
+                    continue
             key = (sim, -days, -entry.id)
             if best is None or key > best[0]:
                 best = (key, entry, sim)
@@ -103,7 +152,9 @@ def _pair_pass(
             continue
         _, entry, sim = best
         matched_gl.add(entry.id)
-        confidence = EXACT_CONFIDENCE if match_type == "exact" else round(0.6 + 0.3 * sim, 4)
+        # Fuzzy confidence scales with the descriptor score: a threshold-level
+        # match lands below the 0.85 auto-approve band, a perfect score at 0.9.
+        confidence = EXACT_CONFIDENCE if match_type == "exact" else round(0.5 + 0.4 * sim, 4)
         matches.append(
             {
                 "bank_line_ids": [line.id],

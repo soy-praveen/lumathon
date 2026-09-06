@@ -1,5 +1,7 @@
 # Ledger Sentinel
 
+Built by Praveen (solo) for Syndicate by Maximor, Track 2: Autonomous Office of the CFO. The whole project was built inside Agent Orchestrator in one day; see the section on how AO was used below.
+
 An autonomous month-end close agent. Each period it runs bank reconciliation, accrual detection (received-not-invoiced purchase orders and missing recurring bills), flux analysis against the prior month, and anomaly checks (duplicate invoices, vendor name variance, round-number splits near approval limits, out-of-period postings) end to end, and escalates only genuine judgment calls to a human reviewer. Every human decision feeds a learning loop: the agent distills the resolution into a narrow, guardrailed policy rule, replays that rule against all prior months as a regression gate, and promotes it only if no previously correct decision flips. Promoted rules apply automatically next month, so the agent escalates less over time without losing accuracy.
 
 **Core guarantee: every proposed journal entry carries an `evidence[]` list pointing at specific source rows (bank lines, invoices, GL entries, purchase orders). The `ProposedJE` schema rejects any entry with empty evidence or unbalanced lines, so a journal entry without evidence cannot exist anywhere in the system.**
@@ -108,8 +110,15 @@ Escalation declines month over month because of the learning loop: each close, r
 
 ## How AO was used
 
-The project was built with Agent Orchestrator. An orchestrator session planned the build and spawned worker sessions, each in its own git worktree and branch: data generator, recon engine, accrual and flux engines, agent core, review UI, eval harness, and docs. Each worker shipped one focused PR that went through review and CI before merging to main, and the orchestrator coordinated interface contracts and follow-up fixes between sessions.
+The whole build ran inside Agent Orchestrator, from the first commit to the last merge. One orchestrator session received a short brief (read the spec, follow the build plan, review every PR, merge when green) and did the rest:
+
+- It spawned 14 worker sessions in sequence and in parallel, each in its own git worktree and branch: scaffold, data generator, bank reconciliation, accrual and flux engines, agent core, review UI, eval harness, three eval-driven fix workers, two eval refreshes, and docs.
+- It wrote every worker a brief with exact files, interface contracts, and acceptance criteria, then reviewed the resulting PRs itself. It sent real corrections back: money columns typed as float where SQLite returns Decimal, a test that relied on engine packages being absent, a period filter missing from accrual matching.
+- When a merge turned CI on main red, it caught the failure and routed the fix to the responsible worker. When the eval harness found the reconciliation engine under-matching, it spawned fix workers on its own and re-ran the evaluation afterwards.
+- 14 pull requests went through review and CI (ruff and pytest) before merging to main. Three small commits were made directly by hand: Neatlogs tracing, a rule-matching fix in the anomaly engine, and the Run close button.
+
+The demo video shows the AO board and session history for the project.
 
 ## Team
 
-<!-- TEAM: replace this line with team member names before submission -->
+Praveen (soy-praveen), solo.

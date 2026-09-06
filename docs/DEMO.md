@@ -15,10 +15,10 @@ In a second terminal:
 ```bash
 cd web
 npm install
-npm run dev
+npm run dev -- --host 127.0.0.1
 ```
 
-Open http://localhost:5173. Keep a third terminal ready for the curl commands below. The rule distillation step calls the model, so have `ANTHROPIC_API_KEY` exported in the uvicorn terminal (or the local `claude` CLI logged in); without either, the distill button returns "LLM unavailable" and the rest of the demo still works.
+Open http://127.0.0.1:5173. Keep a third terminal ready for the curl commands below. The rule distillation step calls the model, so have `ANTHROPIC_API_KEY` exported in the uvicorn terminal (or the local `claude` CLI logged in); without either, the distill button returns "LLM unavailable" and the rest of the demo still works.
 
 ## 0:00 - The problem
 

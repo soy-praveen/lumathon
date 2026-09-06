@@ -57,10 +57,10 @@ Then in a second terminal:
 ```bash
 cd web
 npm install
-npm run dev
+npm run dev -- --host 127.0.0.1
 ```
 
-Open http://localhost:5173. The Vite dev server proxies API calls to the backend on port 8000. On Windows PowerShell, set the database path with `$env:SENTINEL_DB = "data/sentinel.db"` before starting uvicorn.
+Open http://127.0.0.1:5173. The Vite dev server proxies API calls to the backend on port 8000. The `--host` flag makes Vite listen on 127.0.0.1 (by default it binds only localhost, which on some Windows setups resolves to IPv6 only). On Windows PowerShell, set the database path with `$env:SENTINEL_DB = "data/sentinel.db"` before starting uvicorn.
 
 Kick off a close from the command line (the UI reviews results; it does not trigger runs):
 

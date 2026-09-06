@@ -174,6 +174,40 @@ def test_vendor_name_variance_ignores_expired_or_inactive_rules():
     assert len(by_category(result, "vendor_name_variance")) == 1
 
 
+def test_vendor_name_variance_distilled_suffix_rule_covers_every_suffix_pair():
+    """A rule in the shape the distiller produces covers all suffix-only variants."""
+    session = make_session()
+    aws = add_vendor(session, "Amazon Web Services")
+    aws_variant = add_vendor(session, "Amazon Web Services Inc")
+    twilio = add_vendor(session, "Twilio")
+    twilio_variant = add_vendor(session, "Twilio Inc.")
+    figma = add_vendor(session, "Figma")
+    figma_typo = add_vendor(session, "Figmaa")
+    add_invoice(session, aws, "AWS-1", "2026-01-03", 8210.50)
+    add_invoice(session, aws_variant, "AWS-2", "2026-01-12", 8194.10)
+    add_invoice(session, twilio, "TW-1", "2026-01-07", 512.40)
+    add_invoice(session, twilio_variant, "TW-2", "2026-01-16", 498.15)
+    add_invoice(session, figma, "FG-1", "2026-01-08", 675.19)
+    add_invoice(session, figma_typo, "FG-2", "2026-01-21", 675.19)
+    rule = PolicyRule(
+        scope=(
+            "vendors table, vendor_name_variance category, matches against master "
+            "vendor record 'Amazon Web Services' (partner vendors row 1)"
+        ),
+        condition=(
+            "candidate vendor name equals the matched master vendor name after "
+            "stripping a trailing legal-entity suffix (one of: Inc, Inc., LLC, Ltd) "
+            "and similarity score >= 0.95"
+        ),
+        action="auto-approve the exception as a duplicate vendor record",
+        limits={"suffix_whitelist": ["Inc", "Inc.", "LLC", "Ltd"], "min_similarity": 0.95},
+    )
+
+    result = run_anomaly(session, PERIOD, rules=[rule])
+    variances = by_category(result, "vendor_name_variance")
+    assert [item["row_id"] for item in variances] == [figma_typo.id]
+
+
 def test_round_number_split_fires_on_invoices_just_under_limit():
     session = make_session()
     vendor = add_vendor(session, "Apex Building Services")

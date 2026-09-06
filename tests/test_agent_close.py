@@ -185,7 +185,12 @@ def test_load_active_rules_keeps_rule_expiring_in_period(tmp_path):
         assert [rule.scope for rule in rules] == ["vendor:Edge"]
 
 
-def test_run_close_missing_engine_raises_clear_error(tmp_path):
+def test_run_close_missing_engine_raises_clear_error(tmp_path, monkeypatch):
     engine = make_engine(tmp_path)
+
+    def missing(name):
+        raise ImportError(f"No module named '{name}'")
+
+    monkeypatch.setattr("sentinel.agent.close.import_module", missing)
     with pytest.raises(RuntimeError, match="sentinel.recon"):
         run_close(engine, "2026-02", engines={})

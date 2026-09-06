@@ -133,6 +133,25 @@ export function disableRule(ruleId: number): Promise<PolicyRule> {
   return request(`/rules/${ruleId}/disable`, { method: "POST" });
 }
 
+export interface CloseRunResult {
+  period: string;
+  je_count: number;
+  auto_approved_count: number;
+  needs_review_count: number;
+  exception_count: number;
+  stats: Record<string, unknown>;
+}
+
+export function runClose(period: string, priorPeriodValue: string | null): Promise<CloseRunResult> {
+  return request("/close/run", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(
+      priorPeriodValue ? { period, prior_period: priorPeriodValue } : { period },
+    ),
+  });
+}
+
 export function fetchMetrics(period: string): Promise<Metrics> {
   return request(withParams("/metrics", { period }));
 }

@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { ApiError, Metrics, fetchMetrics, formatPercent, priorPeriod } from "../api";
+import {
+  ApiError,
+  CloseRunResult,
+  Metrics,
+  fetchMetrics,
+  formatPercent,
+  priorPeriod,
+  runClose,
+} from "../api";
 
 interface MetricRow {
   label: string;
@@ -9,10 +17,12 @@ interface MetricRow {
 }
 
 export function MetricsPage() {
-  const [period, setPeriod] = useState("2025-08");
+  const [period, setPeriod] = useState("2026-01");
   const [current, setCurrent] = useState<Metrics | null>(null);
   const [prior, setPrior] = useState<Metrics | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [running, setRunning] = useState(false);
+  const [lastRun, setLastRun] = useState<CloseRunResult | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -33,6 +43,20 @@ export function MetricsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const close = useCallback(async () => {
+    setError(null);
+    setRunning(true);
+    try {
+      const result = await runClose(period, priorPeriod(period));
+      setLastRun(result);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "close run failed");
+    } finally {
+      setRunning(false);
+    }
+  }, [period, load]);
 
   const rows: MetricRow[] = current
     ? [
@@ -86,8 +110,18 @@ export function MetricsPage() {
         <button type="button" onClick={() => void load()}>
           Refresh
         </button>
+        <button type="button" className="primary" disabled={running} onClick={() => void close()}>
+          {running ? "Closing " + period + "..." : "Run close for " + period}
+        </button>
       </div>
       {error && <div className="notice bad">{error}</div>}
+      {lastRun && (
+        <div className="notice">
+          Closed {lastRun.period}: {lastRun.je_count} journal entries proposed,{" "}
+          {lastRun.auto_approved_count} auto approved, {lastRun.needs_review_count} for review,{" "}
+          {lastRun.exception_count} exceptions raised.
+        </div>
+      )}
       {current && (
         <div>
           <table>

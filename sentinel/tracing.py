@@ -56,8 +56,22 @@ def traced_run(name: str) -> Iterator[None]:
         return
     try:
         import neatlogs
+        from neatlogs import init as neatlogs_init
 
-        with neatlogs.trace(name, kind="WORKFLOW"):
+        # Neatlogs keeps its own tracer provider rather than installing the
+        # OpenTelemetry global one, so the root span must come from it.
+        provider = getattr(neatlogs_init, "_tracer_provider", None)
+        if provider is None:
+            from opentelemetry import trace as otel_trace
+
+            provider = otel_trace.get_tracer_provider()
+        tracer = provider.get_tracer(WORKFLOW_NAME)
+        attributes = {
+            "openinference.span.kind": "WORKFLOW",
+            "neatlogs.span.kind": "workflow",
+            "workflow.name": WORKFLOW_NAME,
+        }
+        with tracer.start_as_current_span(name, attributes=attributes):
             yield
         try:
             neatlogs.flush(timeout_millis=5000)

@@ -16,7 +16,8 @@ web/dist/
 .env
 .env.*
 
-# Databases
+# Databases and generated data
 *.db
 *.sqlite
 *.sqlite3
+data/

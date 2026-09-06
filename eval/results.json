@@ -1,0 +1,467 @@
+{
+  "meta": {
+    "seed": 42,
+    "db_path": "data/eval.db",
+    "ground_truth_path": "data/ground_truth.json",
+    "periods": [
+      "2026-01",
+      "2026-02",
+      "2026-03"
+    ],
+    "llm_mode": "auto",
+    "llm_enabled": false,
+    "generated_at": "2026-09-06T08:24:24+00:00"
+  },
+  "months": [
+    {
+      "period": "2026-01",
+      "je_count": 3,
+      "auto_approved_count": 2,
+      "needs_review_count": 1,
+      "exception_count": 38,
+      "escalation_rate": 0.9512,
+      "auto_match_rate": 0.3333,
+      "wall_time_seconds": 0.474,
+      "llm_calls": {
+        "attempted": 7,
+        "succeeded": 0
+      },
+      "review": {
+        "jes_approved": 1,
+        "jes_rejected": 0,
+        "exceptions_approved": 6,
+        "exceptions_rejected": 32
+      },
+      "rules": {
+        "rules_distilled": 1,
+        "rules_promoted": 1,
+        "rules_gate_rejected": 0
+      },
+      "scores": {
+        "categories": {
+          "bank_fee": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "bank_interest": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "duplicate_invoice": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "missing_recurring": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "out_of_period": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "recon_unmatched": {
+            "tp": 0,
+            "fp": 32,
+            "fn": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "rni_po": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "round_number_split": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "timing_difference": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendor_name_variance": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        },
+        "totals": {
+          "tp": 9,
+          "fp": 32,
+          "fn": 2,
+          "precision": 0.2195,
+          "recall": 0.8182,
+          "f1": 0.3462
+        }
+      }
+    },
+    {
+      "period": "2026-02",
+      "je_count": 5,
+      "auto_approved_count": 4,
+      "needs_review_count": 1,
+      "exception_count": 38,
+      "escalation_rate": 0.907,
+      "auto_match_rate": 0.4348,
+      "wall_time_seconds": 0.571,
+      "llm_calls": {
+        "attempted": 7,
+        "succeeded": 0
+      },
+      "review": {
+        "jes_approved": 1,
+        "jes_rejected": 0,
+        "exceptions_approved": 6,
+        "exceptions_rejected": 32
+      },
+      "rules": {
+        "rules_distilled": 1,
+        "rules_promoted": 1,
+        "rules_gate_rejected": 0
+      },
+      "scores": {
+        "categories": {
+          "bank_fee": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "bank_interest": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "duplicate_invoice": {
+            "tp": 1,
+            "fp": 1,
+            "fn": 0,
+            "precision": 0.5,
+            "recall": 1.0,
+            "f1": 0.6667
+          },
+          "missing_recurring": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "out_of_period": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "recon_unmatched": {
+            "tp": 0,
+            "fp": 31,
+            "fn": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "rni_po": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "round_number_split": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "timing_difference": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendor_name_variance": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "totals": {
+          "tp": 10,
+          "fp": 32,
+          "fn": 1,
+          "precision": 0.2381,
+          "recall": 0.9091,
+          "f1": 0.3774
+        }
+      }
+    },
+    {
+      "period": "2026-03",
+      "je_count": 7,
+      "auto_approved_count": 6,
+      "needs_review_count": 1,
+      "exception_count": 34,
+      "escalation_rate": 0.8537,
+      "auto_match_rate": 0.5217,
+      "wall_time_seconds": 0.489,
+      "llm_calls": {
+        "attempted": 7,
+        "succeeded": 0
+      },
+      "review": {
+        "jes_approved": 1,
+        "jes_rejected": 0,
+        "exceptions_approved": 6,
+        "exceptions_rejected": 28
+      },
+      "rules": {
+        "rules_distilled": 1,
+        "rules_promoted": 1,
+        "rules_gate_rejected": 0
+      },
+      "scores": {
+        "categories": {
+          "bank_fee": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "bank_interest": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "duplicate_invoice": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "missing_recurring": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "out_of_period": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "recon_unmatched": {
+            "tp": 0,
+            "fp": 28,
+            "fn": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "rni_po": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "round_number_split": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "timing_difference": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendor_name_variance": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        },
+        "totals": {
+          "tp": 10,
+          "fp": 28,
+          "fn": 1,
+          "precision": 0.2632,
+          "recall": 0.9091,
+          "f1": 0.4082
+        }
+      }
+    }
+  ],
+  "by_category": {
+    "bank_fee": {
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "bank_interest": {
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "duplicate_invoice": {
+      "tp": 3,
+      "fp": 1,
+      "fn": 0,
+      "precision": 0.75,
+      "recall": 1.0,
+      "f1": 0.8571
+    },
+    "missing_recurring": {
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "out_of_period": {
+      "tp": 6,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "recon_unmatched": {
+      "tp": 0,
+      "fp": 91,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "rni_po": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 2,
+      "precision": 1.0,
+      "recall": 0.3333,
+      "f1": 0.5
+    },
+    "round_number_split": {
+      "tp": 6,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "timing_difference": {
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "vendor_name_variance": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 2,
+      "precision": 1.0,
+      "recall": 0.3333,
+      "f1": 0.5
+    }
+  },
+  "totals": {
+    "tp": 29,
+    "fp": 92,
+    "fn": 4,
+    "precision": 0.2397,
+    "recall": 0.8788,
+    "f1": 0.3766
+  },
+  "escalation_by_month": {
+    "2026-01": 0.9512,
+    "2026-02": 0.907,
+    "2026-03": 0.8537
+  },
+  "llm_calls_total": {
+    "attempted": 21,
+    "succeeded": 0
+  }
+}

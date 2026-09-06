@@ -34,6 +34,26 @@ def test_get_engine_reads_env_when_path_is_none(monkeypatch, tmp_path):
     assert engine.url.database == str(db_path)
 
 
+def test_amounts_round_trip_as_float(tmp_path):
+    from sentinel.db import BankLine
+
+    engine = get_engine(str(tmp_path / "amounts-test.db"))
+    init_db(engine)
+    with get_session(engine) as session:
+        session.add(
+            BankLine(
+                period="2026-01",
+                line_date="2026-01-15",
+                descriptor="AMZN WEB SERV WA 8XKQ2",
+                amount=-1287.53,
+            )
+        )
+    with get_session(engine) as session:
+        line = session.query(BankLine).one()
+        assert isinstance(line.amount, float)
+        assert abs(line.amount - (-1287.53)) < 0.005
+
+
 def test_get_session_commits(tmp_path):
     from sentinel.db import Account
 

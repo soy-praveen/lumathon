@@ -2,6 +2,9 @@
 
 Other modules add no tables here; they build on these. The schema is the shared
 contract for the matching, accrual, flux, and anomaly engines.
+
+Amounts are floats of currency units; compare with a cent-level tolerance,
+never exact equality.
 """
 
 from __future__ import annotations
@@ -43,8 +46,8 @@ class GLEntry(Base):
     entry_date: Mapped[str] = mapped_column(String(10))  # YYYY-MM-DD
     account_code: Mapped[str] = mapped_column(String(20), index=True)
     description: Mapped[str] = mapped_column(String(255))
-    debit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
-    credit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    debit: Mapped[float] = mapped_column(Numeric(14, 2, asdecimal=False), default=0)
+    credit: Mapped[float] = mapped_column(Numeric(14, 2, asdecimal=False), default=0)
     source: Mapped[str | None] = mapped_column(String(50), default=None)
 
 
@@ -55,7 +58,8 @@ class BankLine(Base):
     period: Mapped[str] = mapped_column(String(7), index=True)
     line_date: Mapped[str] = mapped_column(String(10))
     descriptor: Mapped[str] = mapped_column(String(255))  # raw bank statement text
-    amount: Mapped[float] = mapped_column(Numeric(14, 2))  # positive deposit, negative withdrawal
+    # amount is positive for deposits, negative for withdrawals
+    amount: Mapped[float] = mapped_column(Numeric(14, 2, asdecimal=False))
     reference: Mapped[str | None] = mapped_column(String(80), default=None)
 
 
@@ -77,7 +81,7 @@ class APInvoice(Base):
     invoice_number: Mapped[str] = mapped_column(String(60))
     invoice_date: Mapped[str] = mapped_column(String(10))
     due_date: Mapped[str | None] = mapped_column(String(10), default=None)
-    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2, asdecimal=False))
     status: Mapped[str] = mapped_column(String(20), default="open")  # open, paid, void
 
 
@@ -89,7 +93,7 @@ class PurchaseOrder(Base):
     vendor_id: Mapped[int] = mapped_column(ForeignKey("vendors.id"))
     po_number: Mapped[str] = mapped_column(String(60))
     order_date: Mapped[str] = mapped_column(String(10))
-    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2, asdecimal=False))
     status: Mapped[str] = mapped_column(String(20), default="open")  # open, received, closed
 
 
@@ -100,7 +104,7 @@ class GoodsReceipt(Base):
     period: Mapped[str] = mapped_column(String(7), index=True)
     po_id: Mapped[int] = mapped_column(ForeignKey("purchase_orders.id"))
     receipt_date: Mapped[str] = mapped_column(String(10))
-    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2, asdecimal=False))
 
 
 class RecurringVendor(Base):
@@ -108,7 +112,7 @@ class RecurringVendor(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     vendor_id: Mapped[int] = mapped_column(ForeignKey("vendors.id"))
-    expected_amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    expected_amount: Mapped[float] = mapped_column(Numeric(14, 2, asdecimal=False))
     expected_day: Mapped[int]  # day of month the bill usually lands
     account_code: Mapped[str] = mapped_column(String(20))
     active: Mapped[bool] = mapped_column(default=True)
@@ -120,9 +124,9 @@ class DodoPayout(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     period: Mapped[str] = mapped_column(String(7), index=True)
     payout_date: Mapped[str] = mapped_column(String(10))
-    gross_amount: Mapped[float] = mapped_column(Numeric(14, 2))
-    fee_amount: Mapped[float] = mapped_column(Numeric(14, 2))
-    net_amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    gross_amount: Mapped[float] = mapped_column(Numeric(14, 2, asdecimal=False))
+    fee_amount: Mapped[float] = mapped_column(Numeric(14, 2, asdecimal=False))
+    net_amount: Mapped[float] = mapped_column(Numeric(14, 2, asdecimal=False))
     reference: Mapped[str | None] = mapped_column(String(80), default=None)
 
 
@@ -145,8 +149,8 @@ class JELineRow(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     je_id: Mapped[int] = mapped_column(ForeignKey("proposed_jes.id"))
     account_code: Mapped[str] = mapped_column(String(20))
-    debit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
-    credit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    debit: Mapped[float] = mapped_column(Numeric(14, 2, asdecimal=False), default=0)
+    credit: Mapped[float] = mapped_column(Numeric(14, 2, asdecimal=False), default=0)
 
 
 class ExceptionRecord(Base):

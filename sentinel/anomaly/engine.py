@@ -166,23 +166,53 @@ def _normalize_name(name: str) -> str:
     return " ".join(tokens)
 
 
+BENIGN_ACTION_PREFIXES = (
+    "suppress",
+    "ignore",
+    "auto-approve",
+    "auto approve",
+    "approve",
+    "accept",
+    "treat",
+    "resolve",
+    "skip",
+)
+
+
 def _rule_applies_to_variance(rule: PolicyRule, period: str) -> bool:
     if not rule.active:
         return False
     if rule.expires is not None and rule.expires < period:
         return False
     scope = rule.scope.lower()
-    if "vendor_name_variance" not in scope and "anomaly" not in scope:
+    if not any(key in scope for key in ("vendor_name_variance", "vendor", "anomaly")):
         return False
     action = rule.action.strip().lower()
-    return action.startswith("suppress") or action.startswith("ignore")
+    return action.startswith(BENIGN_ACTION_PREFIXES)
+
+
+def _rule_is_suffix_generic(rule: PolicyRule) -> bool:
+    """True for rules that say suffix-only name variants are the same vendor.
+
+    Distilled rules describe this in prose ("differs only by a legal entity
+    suffix") and usually carry a suffix whitelist in limits. Such a rule is not
+    about one named pair; it covers every pair whose names collapse to the
+    same normalized form.
+    """
+    text = f"{rule.condition} {rule.scope}".lower()
+    limits = rule.limits or {}
+    if any(key in limits for key in ("suffix_whitelist", "allowed_suffix_diff_only")):
+        return True
+    return "suffix" in text and any(word in text for word in ("entity", "inc", "llc", "ltd"))
 
 
 def _rule_covers_pair(rule: PolicyRule, first_name: str, second_name: str) -> bool:
+    first_norm = _normalize_name(first_name)
+    second_norm = _normalize_name(second_name)
+    if _rule_is_suffix_generic(rule) and first_norm == second_norm:
+        return True
     condition = _normalize_name(rule.condition)
-    return all(
-        _normalize_name(name) in condition for name in (first_name, second_name)
-    )
+    return all(name in condition for name in (first_norm, second_norm))
 
 
 def _first_invoice_periods(session: Session, period: str) -> dict[int, str]:

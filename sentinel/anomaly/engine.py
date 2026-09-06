@@ -5,7 +5,9 @@ with partner row ids named in the description:
 
 - duplicate_invoice: same vendor, same or near-same amount, close dates,
   different invoice numbers.
-- vendor_name_variance: near-duplicate vendor names via difflib.
+- vendor_name_variance: near-duplicate vendor names via difflib, after
+  normalizing case and stripping corporate suffixes (Inc, LLC, Ltd, Co).
+  A pair is reported once, in the period the newer vendor first bills.
 - round_number_split: two or more invoices from one vendor just under a round
   approval limit, or a single suspiciously round invoice amount.
 - out_of_period: gl_entries whose entry_date falls outside their period column.
@@ -21,14 +23,20 @@ from difflib import SequenceMatcher
 from itertools import combinations
 
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from sentinel.db import APInvoice, GLEntry, Vendor
 
 DUP_DATE_WINDOW_DAYS = 10
 DUP_AMOUNT_PCT = 0.01  # amounts within 1 percent (or one cent) count as near-same
-NAME_SIMILARITY = 0.85
+# Calibrated on real-world variants: after suffix stripping, planted pairs like
+# "Datadog" / "Datadog, Inc." compare at 1.0 while the closest distinct vendor
+# pair (Salesforce / Staples) sits at 0.59, so 0.8 separates them cleanly.
+NAME_SIMILARITY = 0.8
+CORPORATE_SUFFIXES = frozenset(
+    {"inc", "incorporated", "llc", "llp", "ltd", "limited", "co", "corp", "corporation", "company"}
+)
 APPROVAL_LIMITS = (1000.0, 2500.0, 5000.0, 10000.0, 25000.0, 50000.0)
 JUST_UNDER_SHARE = 0.9  # an amount in [0.9 * limit, limit) is "just under" the limit
 ROUND_AMOUNT_MIN = 5000.0
@@ -98,10 +106,17 @@ def _check_duplicate_invoices(
 
 def _check_vendor_name_variance(session: Session, period: str, exceptions: list[dict]) -> None:
     vendors = session.scalars(select(Vendor).order_by(Vendor.id)).all()
+    first_billed = _first_invoice_periods(session, period)
     for first, second in combinations(vendors, 2):
         ratio = SequenceMatcher(None, _normalize_name(first.name), _normalize_name(second.name))
         similarity = ratio.ratio()
         if similarity < NAME_SIMILARITY:
+            continue
+        # Report the pair only in the period the newer vendor first bills;
+        # later closes would just repeat a finding already on record. A vendor
+        # with no invoices yet counts as new this period.
+        emergence = max(first_billed.get(first.id, period), first_billed.get(second.id, period))
+        if emergence != period:
             continue
         exceptions.append(
             {
@@ -120,7 +135,20 @@ def _check_vendor_name_variance(session: Session, period: str, exceptions: list[
 
 def _normalize_name(name: str) -> str:
     cleaned = "".join(ch if ch.isalnum() or ch.isspace() else " " for ch in name.lower())
-    return " ".join(cleaned.split())
+    tokens = cleaned.split()
+    while len(tokens) > 1 and tokens[-1] in CORPORATE_SUFFIXES:
+        tokens.pop()
+    return " ".join(tokens)
+
+
+def _first_invoice_periods(session: Session, period: str) -> dict[int, str]:
+    """Earliest invoice period per vendor, over invoices up to the period under review."""
+    rows = session.execute(
+        select(APInvoice.vendor_id, func.min(APInvoice.period))
+        .where(APInvoice.period <= period, APInvoice.status != "void")
+        .group_by(APInvoice.vendor_id)
+    ).all()
+    return dict(rows)
 
 
 def _check_round_number_split(

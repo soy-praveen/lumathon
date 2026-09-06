@@ -119,6 +119,30 @@ def test_rni_po_proposes_balanced_accrual():
     assert "2026-02" in je.reason
 
 
+def test_rni_po_accrues_when_invoice_only_arrives_next_period():
+    session = make_session()
+    po, receipt = seed_rni_po(session)
+    session.add(
+        APInvoice(
+            period="2026-02",
+            vendor_id=po.vendor_id,
+            invoice_number="GLX-88519",
+            invoice_date="2026-02-04",
+            amount=8420.75,
+        )
+    )
+    session.commit()
+
+    result = run_accruals(session, PERIOD)
+    assert result.exceptions == []
+    assert len(result.proposed_jes) == 1
+    je = result.proposed_jes[0]
+    assert je.rule == "rni_po"
+    cited = {(ev.source_table, ev.row_id) for ev in je.evidence}
+    assert ("goods_receipts", receipt.id) in cited
+    assert ("purchase_orders", po.id) in cited
+
+
 def test_rni_po_silent_when_invoice_matches():
     session = make_session()
     seed_rni_po(session, invoiced=True)

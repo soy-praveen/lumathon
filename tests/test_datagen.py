@@ -83,6 +83,29 @@ def test_ground_truth_rows_exist(generated):
                 assert entry["description"]
 
 
+def test_out_of_period_ground_truth_is_one_entry_per_posting(generated):
+    engine, summary = generated
+    with sdb.get_session(engine) as session:
+        for entries in summary["ground_truth"].values():
+            planted = [e for e in entries if e["category"] == "out_of_period"]
+            assert len(planted) == 1
+            entry = planted[0]
+            assert entry["source_table"] == "gl_entries"
+            row = session.get(sdb.GLEntry, entry["row_id"])
+            assert row.entry_date[:7] != row.period
+            legs = (
+                session.query(sdb.GLEntry)
+                .filter_by(
+                    entry_date=row.entry_date,
+                    description=row.description,
+                    source=row.source,
+                )
+                .all()
+            )
+            assert len(legs) == 2, "misdated posting keeps both GL legs"
+            assert row.id == min(leg.id for leg in legs)
+
+
 def test_planted_duplicates_are_near_duplicates(generated):
     engine, summary = generated
     with sdb.get_session(engine) as session:

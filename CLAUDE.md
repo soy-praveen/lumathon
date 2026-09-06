@@ -1,4 +1,4 @@
-# Ledger Sentinel — conventions for every agent session
+# Ledger Sentinel: conventions for every agent session
 
 Read `docs/SPEC.md` first. It is the source of truth for scope and architecture.
 

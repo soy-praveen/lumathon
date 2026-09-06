@@ -1,7 +1,7 @@
-# Ledger Sentinel — Autonomous Month-End Close That Learns
+# Ledger Sentinel: Autonomous Month-End Close That Learns
 
 **Track 2: Autonomous Office of the CFO**
-**Hackathon:** Syndicate by Maximor (Sept 5–6, 2026)
+**Hackathon:** Syndicate by Maximor (Sept 5-6, 2026)
 
 ## One-liner
 
@@ -67,7 +67,7 @@ Outputs:
 ## Evaluation harness
 
 - Generator plants N anomalies per month across categories with known labels.
-- `eval/` runs the close headless for months 1–3 and reports:
+- `eval/` runs the close headless for months 1-3 and reports:
   precision, recall, F1 per category; escalation rate; auto-match rate; LLM cost; wall time.
 - Results committed as `eval/results.json` + chart for the README and demo.
 
@@ -98,7 +98,7 @@ Every PR goes through AO review → CI → merge. Record the AO board for the de
 
 - Track + problem statement
 - GitHub repo (public), README with architecture + eval results
-- 3–5 min demo video showing AO sessions/board + the product
+- 3-5 min demo video showing AO sessions/board + the product
 - Explanation of agent architecture and evaluation
 - How AO was used
 - Team member names
